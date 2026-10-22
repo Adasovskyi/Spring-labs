@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="uk" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Прогноз погоди (Користувач)</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 30px; background-color: lightgrey; color: #333; }
+        .container { max-width: 900px; margin: auto; background: white; padding: 25px; border-radius: 8px; }
+        .nav { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid gray; padding-bottom: 12px; margin-bottom: 20px; }
+        .nav a { text-decoration: none; color: blue; font-weight: bold; }
+        .filter-box { background: #eaf3fb; padding: 15px; border-radius: 6px; margin-bottom: 20px; display: flex; gap: 15px; align-items: flex-end; flex-wrap: wrap; }
+        label { display: block; font-size: 13px; margin-bottom: 5px; font-weight: bold; }
+        select, input, button { padding: 8px 12px; border: 1px solid gray; border-radius: 4px; }
+        button { background: blue; color: white; border: none; cursor: pointer; font-weight: bold; }
+        button:hover { background: darkblue; }
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        th, td { border: 1px solid #ddd; padding: 10px; text-align: left; }
+        th { background-color: blue; color: white; }
+
+        .temp-cold { color: #0056b3; font-weight: bold; }
+        .temp-normal { color: #2b8a3e; font-weight: bold; }
+        .temp-hot { color: #c92a2a; font-weight: bold; }
+
+        .bean-footer { margin-top: 25px; padding: 10px; background: #f0f0f0; font-family: monospace; font-size: 12px; border-radius: 4px; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="nav">
+        <h2>Прогноз погоди (Користувач)</h2>
+        <a th:href="@{/admin}">Панель Адміністратора</a>
+    </div>
+
+    <form th:action="@{/}" method="get" class="filter-box">
+        <div>
+            <label for="locationId">Локація:</label>
+            <select name="locationId" id="locationId">
+                <option value="">Усі локації</option>
+                <option th:each="loc : ${locations}"
+                        th:value="${loc.id}"
+                        th:text="${loc.city + ' (' + loc.country + ')'}"
+                        th:selected="${loc.id == selectedLocationId}">
+                </option>
+            </select>
+        </div>
+
+        <div>
+            <label for="date">Дата прогнозу:</label>
+            <input type="date" name="date" id="date" th:value="${selectedDate}">
+        </div>
+
+        <div>
+            <button type="submit">Переглянути прогноз</button>
+            <a th:href="@{/}" style="margin-left: 10px; font-size: 14px; text-decoration: none; color: #333;">Скинути фільтр</a>
+        </div>
+    </form>
+
+    <p style="margin-bottom: 10px; font-size: 14px;">
+        <strong>Обрана дата:</strong>
+        <span th:text="${selectedDate ?: 'Усі дати'}"></span>
+    </p>
+
+    <table>
+        <thead>
+        <tr>
+            <th>Локація</th>
+            <th>Дата</th>
+            <th>Температура</th>
+            <th>Погодні умови</th>
+            <th>Вологість</th>
+            <th>Вітер</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr th:if="${#lists.isEmpty(forecasts)}">
+            <td colspan="6" style="text-align: center; color: #777;">
+                На вибрану дату та локацію прогнозів не знайдено.
+            </td>
+        </tr>
+
+        <tr th:each="f : ${forecasts}">
+            <td th:switch="${f.location.city}">
+                <span th:case="'Київ'" th:text="${f.location.city + ' (Столиця), ' + f.location.country}"></span>
+                <span th:case="'Львів'" th:text="${f.location.city + ' (Захід), ' + f.location.country}"></span>
+                <span th:case="'Одеса'" th:text="${f.location.city + ' (Південь), ' + f.location.country}"></span>
+                <span th:case="'Харків'" th:text="${f.location.city + ' (Схід), ' + f.location.country}"></span>
+                <span th:case="*" th:text="${f.location.city + ', ' + f.location.country}"></span>
+            </td>
+
+            <td th:text="${f.date}"></td>
+
+            <td>
+                <span th:classappend="${f.temperatureCelsius < 0} ? 'temp-cold' : (${f.temperatureCelsius >= 25} ? 'temp-hot' : 'temp-normal')"
+                      th:text="${(f.temperatureCelsius > 0 ? '+' : '') + f.temperatureCelsius + ' °C'}">
+                </span>
+            </td>
+
+            <td th:text="${f.condition}"></td>
+
+            <td th:text="${f.humidityPercent + ' %'}"></td>
+
+            <td>
+                <span th:text="${f.windSpeedKmH + ' км/год '}"></span>
+                <span th:if="${f.windSpeedKmH >= 15.0}" style="color: #c92a2a; font-weight: bold;">(Сильний)</span>
+                <span th:unless="${f.windSpeedKmH >= 15.0}" style="color: #666;">(Помірний)</span>
+            </td>
+        </tr>
+        </tbody>
+    </table>
+
+    <div class="bean-footer">
+        <strong>Демонстрація Spring Scopes:</strong><br>
+        <span th:text="${beanInfo}"></span>
+    </div>
+</div>
+</body>
+</html>

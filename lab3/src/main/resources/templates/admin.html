@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="uk" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Панель Адміністратора</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 30px; background-color: lightgrey; }
+        .container { max-width: 900px; margin: auto; background: white; padding: 25px; border-radius: 8px; }
+        .nav { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid gray; padding-bottom: 12px; margin-bottom: 20px; }
+        .nav a { text-decoration: none; color: blue; font-weight: bold; }
+        .forms-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 20px; margin-bottom: 25px; }
+        .card { background: #f9fbfd; border: 1px solid #dce6f0; padding: 15px; border-radius: 6px; }
+        .form-group { margin-bottom: 12px; }
+        label { display: block; font-size: 13px; margin-bottom: 4px; font-weight: bold; }
+        select, input { width: 100%; padding: 7px; box-sizing: border-box; border: 1px solid gray; border-radius: 4px; }
+        button { background: blue; color: white; border: none; padding: 9px 15px; border-radius: 4px; cursor: pointer; font-weight: bold; width: 100%; }
+        button:hover { background: darkblue; }
+        .btn-delete { background: #dc3545; width: auto; padding: 6px 12px; font-size: 13px; }
+        .btn-delete:hover { background: #b02a37; }
+        .alert-success { background: #d4edda; color: #155724; padding: 10px; border-radius: 4px; margin-bottom: 15px; }
+        .alert-error { background: #f8d7da; color: #721c24; padding: 10px; border-radius: 4px; margin-bottom: 15px; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        th { background-color: blue; color: white; }
+        .bean-footer { margin-top: 20px; padding: 10px; background: #f0f0f0; font-family: monospace; font-size: 12px; border-radius: 4px; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="nav">
+        <h2>Панель Адміністратора</h2>
+        <a th:href="@{/}">На сторінку Користувача</a>
+    </div>
+
+    <div th:if="${successMessage}" class="alert-success" th:text="${successMessage}"></div>
+    <div th:if="${errorMessage}" class="alert-error" th:text="${errorMessage}"></div>
+
+    <div class="forms-grid">
+        <div class="card">
+            <h3>Ввести новий прогноз погоди</h3>
+            <form th:action="@{/admin/forecast}" method="post">
+                <div class="form-group">
+                    <label>Локація:</label>
+                    <select name="locationId" required>
+                        <option th:each="loc : ${locations}"
+                                th:value="${loc.id}"
+                                th:text="${loc.city + ' (' + loc.country + ')'}">
+                        </option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Дата:</label>
+                    <input type="date" name="date" th:value="${today}" required>
+                </div>
+                <div class="form-group">
+                    <label>Температура (°C, від -90 до +60):</label>
+                    <input type="number" name="temperature" value="20" required>
+                </div>
+                <div class="form-group">
+                    <label>Погодні умови (опис):</label>
+                    <input type="text" name="condition" placeholder="Наприклад: Сонячно, без опадів" required>
+                </div>
+                <div class="form-group">
+                    <label>Вологість (%):</label>
+                    <input type="number" name="humidity" min="0" max="100" value="55" required>
+                </div>
+                <div class="form-group">
+                    <label>Швидкість вітру (км/год):</label>
+                    <input type="number" step="0.1" min="0" name="windSpeed" value="10.0" required>
+                </div>
+                <button type="submit">Зберегти прогноз</button>
+            </form>
+        </div>
+
+        <div class="card">
+            <h3>Додати нову локацію</h3>
+            <form th:action="@{/admin/location}" method="post">
+                <div class="form-group">
+                    <label>Місто:</label>
+                    <input type="text" name="city" placeholder="Наприклад: Дніпро" required>
+                </div>
+                <div class="form-group">
+                    <label>Країна:</label>
+                    <input type="text" name="country" value="Україна" required>
+                </div>
+                <button type="submit">Додати місто</button>
+            </form>
+        </div>
+    </div>
+
+    <h3>Усі збережені прогнози</h3>
+    <table>
+        <thead>
+        <tr>
+            <th>ID</th>
+            <th>Локація</th>
+            <th>Дата</th>
+            <th>Температура</th>
+            <th>Умови</th>
+            <th>Вологість</th>
+            <th>Вітер</th>
+            <th>Дії</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr th:if="${#lists.isEmpty(forecasts)}">
+            <td colspan="6" style="text-align: center; color: #777;">
+                Збережених прогнозів немає.
+            </td>
+        </tr>
+        <tr th:each="f : ${forecasts}">
+            <td th:text="${f.id}"></td>
+            <td th:text="${f.location.city}"></td>
+            <td th:text="${f.date}"></td>
+            <td th:text="${f.temperatureCelsius + ' °C'}"></td>
+            <td th:text="${f.condition}"></td>
+            <td th:text="${f.humidityPercent + ' %'}"></td>
+            <td th:text="${f.windSpeedKmH + ' км/год '}"></td>
+            <td>
+                <form th:action="@{/admin/forecast/delete}" method="post" style="margin: 0;">
+                    <input type="hidden" name="id" th:value="${f.id}">
+                    <button type="submit" class="btn-delete">Видалити</button>
+                </form>
+            </td>
+        </tr>
+        </tbody>
+    </table>
+
+    <div class="bean-footer" th:text="${beanInfo}"></div>
+</div>
+</body>
+</html>
